@@ -28,6 +28,10 @@
             ([clause clauses])
     (clause qr)))
 
+(define (compose-clauses . clauses)
+  (lambda (qr)
+    (apply compose-query qr clauses)))
+
 ;; Table -> QueryResult
 ;; Create a QueryResult from a table of data.
 (define (from table)

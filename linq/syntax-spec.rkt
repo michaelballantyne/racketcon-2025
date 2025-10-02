@@ -130,8 +130,6 @@
     (for ([id referenced-ids])
       (raise-syntax-error #f "column not available here" id))))
 
-
-
 (module+ test
   (define articles
     (list (hash 'id 0
@@ -167,5 +165,4 @@
                 author-id id)
           (select name)
           (limit 1))
-   (list (hash 'name "haskell-fan")))
-)
+   (list (hash 'name "haskell-fan"))))

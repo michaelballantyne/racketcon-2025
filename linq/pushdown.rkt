@@ -3,8 +3,7 @@
 (provide (all-defined-out) load-table)
 
 (require (for-syntax racket/match
-                     syntax/parse
-                     racket/pretty)
+                     syntax/parse)
          syntax-spec-v3
          "tables.rkt"
          (prefix-in rt: "embedded.rkt")
@@ -188,8 +187,6 @@
       #:datum-literals (where)
       [(where condition) (get-racket-referenced-identifiers (col) #'condition)])))
 
-
-
 (module+ test
   (define articles
     (list (hash 'id 0
@@ -225,5 +222,4 @@
                 author-id id)
           (select name)
           (limit 1))
-   (list (hash 'name "haskell-fan")))
-)
+   (list (hash 'name "haskell-fan"))))
