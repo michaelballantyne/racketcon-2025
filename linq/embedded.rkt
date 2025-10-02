@@ -30,19 +30,8 @@
 
 ;; Table -> QueryResult
 ;; Create a QueryResult from a table of data.
-(define (from table #:qualify [prefix #f])
-  (if prefix
-      ((qualify prefix) (query-result table))
-      (query-result table)))
-
-;; Symbol -> Clause
-(define (qualify prefix)
-  (lambda (qr)
-    (query-result
-      (for/stream ([row (query-result-data qr)])
-        (for/hash ([(k v) row])
-          (values (string->symbol (format "~a.~a" prefix k))
-                  v))))))
+(define (from table)
+  (query-result table))
 
 ;; (Row -> Boolean) -> Clause
 ;; Filter, keeping only rows that match the predicate.
@@ -61,14 +50,6 @@
      (for/stream ([row (query-result-data qr)])
        (for/hash ([col col-names])
          (values col (hash-ref row col)))))))
-
-;; (Hash ColName ColName) -> Clause
-(define (select-and-rename renamings)
-  (lambda (qr)
-    (query-result
-     (for/stream ([row (query-result-data qr)])
-       (for/hash ([(old-name new-name) (in-hash renamings)])
-         (values new-name (hash-ref row old-name)))))))
 
 ;; QueryResult, (Row -> Boolean) -> Clause
 ;; An inner join of the running query-result with the argument
