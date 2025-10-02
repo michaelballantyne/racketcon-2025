@@ -26,9 +26,7 @@
     #:binding (nest f c ... [])
 
     (check-query #'(query f c ...))
-    ; (pretty-display (syntax->datum #'(query f c ...)))
-     (define/syntax-parse (c^ ...) (predicate-pushdown (attribute c)))
-    ; (pretty-display (syntax->datum #'(query f c^ ...)))
+    (define/syntax-parse (c^ ...) (predicate-pushdown (attribute c)))
     #'(rt:query (compile-from f)
                 (compile-clause c^)
                 ...))
@@ -40,10 +38,9 @@
   (nonterminal/nesting clause (nested)
     (select q:col ...)
     (where condition:racket-expr)
-    (order-by name:col <:racket-expr)
-    (limit n:racket-expr)
     (join tbl:racket-expr (c:col ...) col1:col col2:col)
-    #:binding (scope (bind c) ... col2 nested)))
+    #:binding (scope (bind c) ... col2 nested)
+    (limit n:racket-expr)))
 
 ;; Compile a `from` syntax into an expression that evaluates to a QueryResult
 (define-syntax (compile-from stx)
@@ -55,7 +52,7 @@
 ;; Compile a `clause` syntax into an expression that evaluates to a (-> QueryResult QueryResult)
 (define-syntax (compile-clause stx)
   (syntax-parse stx
-    #:datum-literals (select where join limit order-by)
+    #:datum-literals (select where join limit)
     [(_ (select name ...))
      #'(rt:select 'name ...)]
     [(_ (where condition))
@@ -65,9 +62,9 @@
     [(_ (limit n))
      #'(rt:limit n)]
     [(_ (order-by col <))
-     #'(rt:order-by 'col <)]
-    ))
+     #'(rt:order-by 'col <)]))
 
+;; Column availability check
 (begin-for-syntax
   ;; QuerySyntax -> Void or error
   ;;
@@ -139,9 +136,10 @@
   (define (check-non-row-expr stx)
     (define referenced-ids (get-racket-referenced-identifiers [col] stx))
     (for ([id referenced-ids])
-      (raise-syntax-error #f "column not available here" id)))
-      
+      (raise-syntax-error #f "column not available here" id))))
 
+;; Predicate pushdown optimization
+(begin-for-syntax
   ;; (ListOf ClauseSyntax) -> (ListOf ClauseSyntax)
   ;; Reorder the clauses to place `where` clauses before joins that introduce unrelated columns.
   (define (predicate-pushdown cs)
@@ -188,9 +186,7 @@
   (define (get-where-referenced-vars c)
     (syntax-parse c
       #:datum-literals (where)
-      [(where condition) (get-racket-referenced-identifiers (col) #'condition)]))
-    
-)
+      [(where condition) (get-racket-referenced-identifiers (col) #'condition)])))
 
 
 
@@ -231,13 +227,3 @@
           (limit 1))
    (list (hash 'name "haskell-fan")))
 )
-  
-
-#;;; TODO make this a convert-compile-time-error test
-(module+ test
-
-  (query (from articles (author-id title))
-         (join users ([user-id id] [author-name name])
-               (equal? author-id user-id))
-         (select title author-name)
-         (select author-id)))

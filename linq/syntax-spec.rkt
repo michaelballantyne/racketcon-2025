@@ -36,10 +36,9 @@
   (nonterminal/nesting clause (nested)
     (select q:col ...)
     (where condition:racket-expr)
-    (order-by name:col <:racket-expr)
-    (limit n:racket-expr)
     (join tbl:racket-expr (c:col ...) col1:col col2:col)
-    #:binding (scope (bind c) ... col2 nested)))
+    #:binding (scope (bind c) ... col2 nested)
+    (limit n:racket-expr)))
 
 ;; Compile a `from` syntax into an expression that evaluates to a QueryResult
 (define-syntax (compile-from stx)
@@ -51,7 +50,7 @@
 ;; Compile a `clause` syntax into an expression that evaluates to a (-> QueryResult QueryResult)
 (define-syntax (compile-clause stx)
   (syntax-parse stx
-    #:datum-literals (select where join limit order-by)
+    #:datum-literals (select where join limit)
     [(_ (select name ...))
      #'(rt:select 'name ...)]
     [(_ (where condition))
@@ -59,11 +58,9 @@
     [(_ (join tbl^ (cb ...) col1 col2))
      #'(rt:join (compile-from (from tbl^ (cb ...))) 'col1 'col2)]
     [(_ (limit n))
-     #'(rt:limit n)]
-    [(_ (order-by col <))
-     #'(rt:order-by 'col <)]
-    ))
+     #'(rt:limit n)]))
 
+;; Column availability check
 (begin-for-syntax
   ;; QuerySyntax -> Void or error
   ;;
@@ -95,7 +92,7 @@
   ;; remain accessible in subsequent clauses.
   (define (check-clause stx still-bound-ids)
     (syntax-parse stx
-      #:datum-literals (select derived where join order-by distinct limit aggregate)
+      #:datum-literals (select where join limit)
       [(select name ...)
        (for ([name (attribute name)])
          (check-id name still-bound-ids))
@@ -111,10 +108,6 @@
        (symbol-set-union still-bound-ids names)]
       [(limit n)
        (check-non-row-expr #'n)
-       still-bound-ids]
-      [(order-by col <)
-       (check-id #'col still-bound-ids)
-       (check-non-row-expr #'<)
        still-bound-ids]))
 
   ;; Identifier, ImmutableSymbolSet -> Void or error
@@ -176,13 +169,3 @@
           (limit 1))
    (list (hash 'name "haskell-fan")))
 )
-  
-
-#;;; TODO make this a convert-compile-time-error test
-(module+ test
-
-  (query (from articles (author-id title))
-         (join users ([user-id id] [author-name name])
-               (equal? author-id user-id))
-         (select title author-name)
-         (select author-id)))
