@@ -17,16 +17,16 @@
 ;; A Clause is a (QueryResult -> QueryResult)
 
 ;; QueryResult, Clause ... -> Table
-(define (query/rows query-result . clauses)
-  (query-result->table (apply query query-result clauses)))
+(define (query query-result . clauses)
+  (query-result->table
+    (apply compose-query query-result clauses)))
 
-;; QueryResult, Clause ... -> QueryResult
 ;; Compose a query that transforms the initial query-result (usually produced by `from`),
 ;; applying the transformation defined by each clause in the order they are provided.
-(define (query query-result . clauses)
+(define (compose-query query-result . clauses)
   (for/fold ([qr query-result])
             ([clause clauses])
-    (clause qr)))    
+    (clause qr)))
 
 ;; Table -> QueryResult
 ;; Create a QueryResult from a table of data.
@@ -163,7 +163,7 @@
           (hash 'id 2 'name "Fiona Brown")))
 
   (check-equal?
-    (query/rows
+    (query
       (query-result (rows-then-error data))
       (select 'name)
       (limit 2))

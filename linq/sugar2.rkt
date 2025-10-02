@@ -1,11 +1,13 @@
 #lang racket
 
-(provide where col
-         (except-out (all-from-out "embedded.rkt") rt:where)
+(provide (all-defined-out)
+         (except-out (all-from-out "embedded.rkt") rt:where rt:join rt:select)
          load-table)
 
 (require (rename-in "embedded.rkt"
-                    [where rt:where])
+                    [where rt:where]
+                    [join rt:join]
+                    [select rt:select])
          "tables.rkt"
          racket/stxparam
          (for-syntax syntax/parse))
@@ -49,6 +51,15 @@
             (syntax-parameterize ([col (col-transformer #'row)])
               pred)))])))
 
+(define-syntax join
+  (syntax-parser
+    [(_ table:expr c1 c2)
+     #'(rt:join table 'c1 'c2)]))
+
+(define-syntax select
+  (syntax-parser
+    [(_ col:id ...)
+     #'(rt:select 'col ...)]))
 
 (define-syntax-parameter col
   (lambda (stx)

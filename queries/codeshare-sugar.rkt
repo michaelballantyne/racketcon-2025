@@ -8,7 +8,7 @@
 ;; Columns: airline-id,name,alias,iata,icao,callsign,country,active
 (define airlines (load-table "openflights/airlines.csv"))
 
-(query/rows
+(query
  (from routes)
  (join (from airlines)
        'route-airline-id 'airline-id)

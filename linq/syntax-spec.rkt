@@ -25,9 +25,9 @@
     #:binding (nest f c ... [])
 
     (check-query #'(query f c ...))
-    #'(rt:query/rows (compile-from f)
-                     (compile-clause c)
-                     ...))
+    #'(rt:query (compile-from f)
+                (compile-clause c)
+                ...))
   
   (nonterminal/nesting from-clause (nested)
     (from tbl:racket-expr (c:col ...))
@@ -46,7 +46,7 @@
   (syntax-parse stx
     #:datum-literals (from)
     [(_ (from tbl (cb ...)))
-     #'(rt:query (rt:from tbl) (rt:select 'cb ...))]))
+     #'(rt:compose-query (rt:from tbl) (rt:select 'cb ...))]))
 
 ;; Compile a `clause` syntax into an expression that evaluates to a (-> QueryResult QueryResult)
 (define-syntax (compile-clause stx)
