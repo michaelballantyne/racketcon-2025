@@ -52,4 +52,4 @@
 
 (define-syntax-parameter col
   (lambda (stx)
-    (raise-syntax-error #f "must only be used in where or derived" stx)))
+    (raise-syntax-error #f "must only be used in where" stx)))

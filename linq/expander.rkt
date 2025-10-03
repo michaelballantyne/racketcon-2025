@@ -6,7 +6,8 @@
                      syntax/parse
                      racket/pretty
                      syntax/id-set
-                     syntax/transformer)
+                     syntax/transformer
+                     ee-lib/private/flip-intro-scope)
          "tables.rkt"
          (prefix-in rt: "embedded.rkt")
          (prefix-in sugar: "sugar.rkt"))
@@ -34,8 +35,9 @@
     [(query f c ...)
      (define/syntax-parse (_ f^ c^ ...) (expand-query #'(query f c ...)))
      (define/syntax-parse (c^^ ...) (predicate-pushdown (attribute c^)))
-     (pretty-display (syntax->datum #'(query f^ c^ ...)))
-     (pretty-display (syntax->datum #'(query f^ c^^ ...)))
+     #;(begin
+       (pretty-display (syntax->datum #'(query f^ c^ ...)))
+       (pretty-display (syntax->datum #'(query f^ c^^ ...))))
      #'(rt:query (compile-from f^)
                  (compile-clause c^^)
                  ...)]))
@@ -69,7 +71,7 @@
                   #`(column-binding-rep '#,c)
                   ctx))))
        (define nested^ (internal-definition-context-add-scopes ctx nested))
-       (values #'(from tbl (c ...)) ctx nested^)]))
+       (values #'(from tbl (c^ ...)) ctx nested^)]))
       
   (define (expand-clause stx ctx nested)
     (syntax-parse stx
@@ -109,23 +111,33 @@
   (syntax-parse stx
     #:datum-literals (from)
     [(_ (from tbl (cb ...)))
-     #'(rt:compose-query (rt:from tbl) (rt:select 'cb ...))]))
+     (define/syntax-parse (cb-q ...) (map bind-quote (attribute cb)))
+     #'(rt:compose-query (rt:from tbl) (rt:select cb-q ...))]))
 
 ;; Compile a `clause` syntax into an expression that evaluates to a (-> QueryResult QueryResult)
 (define-syntax (compile-clause stx)
   (syntax-parse stx
     #:datum-literals (select where join limit)
     [(_ (select name ...))
-     #'(rt:select 'name ...)]
+     (define/syntax-parse (name-q ...) (map ref-quote (attribute name)))
+     #'(rt:select name-q ...)]
     [(_ (where condition))
      #'(sugar:where condition)]
     [(_ (join tbl^ (cb ...) col1 col2))
-     #'(rt:join (compile-from (from tbl^ (cb ...))) 'col1 'col2)]
+     (define/syntax-parse col1-q (ref-quote #'col1))
+     (define/syntax-parse col2-q (ref-quote #'col2))
+     #'(rt:join (compile-from (from tbl^ (cb ...))) col1-q col2-q)]
     [(_ (limit n))
      #'(rt:limit n)]))
 
 
 (begin-for-syntax
+  (define (ref-quote id)
+    (syntax-property #`'#,id 'disappeared-use (list (flip-intro-scope id))))
+  (define (bind-quote id)
+    (syntax-property #`'#,id 'disappeared-binding (list (flip-intro-scope id))))
+
+  
   ;; (ListOf ClauseSyntax) -> (ListOf ClauseSyntax)
   ;; Reorder the clauses to place `where` clauses before joins that introduce unrelated columns.
   (define (predicate-pushdown cs)
@@ -182,6 +194,7 @@
          (define ctx (syntax-property #'host-expr 'environment))
          (local-expand #'condition 'expression '() ctx)
          (free-id-set->list (current-referenced-vars)))])))
+
 
 (define-syntax #%host-expression
   (syntax-parser
