@@ -11,10 +11,10 @@
 (query
  (from routes)
  (join (from airlines)
-       'route-airline-id 'airline-id)
+       route-airline-id airline-id)
  (where (equal? (col codeshare) "Y"))
  (where (equal? (col name) "American Airlines"))
- (select 'source-airport 'destination-airport)
+ (select source-airport destination-airport)
  (limit 3))
 
 

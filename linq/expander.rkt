@@ -12,6 +12,18 @@
          (prefix-in rt: "embedded.rkt")
          (prefix-in sugar: "sugar.rkt"))
 
+(define-syntax query
+  (syntax-parser
+    [(query f c ...)
+     (define/syntax-parse (_ f^ c^ ...) (expand-query #'(query f c ...)))
+     (define/syntax-parse (c^^ ...) (predicate-pushdown #'(c^ ...)))
+     #;(begin
+       (pretty-display (syntax->datum #'(query f^ c^ ...)))
+       (pretty-display (syntax->datum #'(query f^ c^^ ...))))
+     #'(rt:query (compile-from f^)
+                 (compile-clause c^^)
+                 ...)]))
+
 (begin-for-syntax
   (define current-referenced-vars (make-parameter #f))
   (define (make-column-reference-transformer name)
@@ -30,17 +42,7 @@
       ((make-column-reference-transformer (column-binding-rep-name rep))
        stx))))
 
-(define-syntax query
-  (syntax-parser
-    [(query f c ...)
-     (define/syntax-parse (_ f^ c^ ...) (expand-query #'(query f c ...)))
-     (define/syntax-parse (c^^ ...) (predicate-pushdown (attribute c^)))
-     #;(begin
-       (pretty-display (syntax->datum #'(query f^ c^ ...)))
-       (pretty-display (syntax->datum #'(query f^ c^^ ...))))
-     #'(rt:query (compile-from f^)
-                 (compile-clause c^^)
-                 ...)]))
+
 
 (begin-for-syntax
   (define (expand-query stx)
@@ -142,7 +144,7 @@
   ;; Reorder the clauses to place `where` clauses before joins that introduce unrelated columns.
   (define (predicate-pushdown cs)
     (reverse (for/fold ([reversed (list)])
-                       ([c cs])
+                       ([c (syntax->list cs)])
                (if (where-clause? c)
                    (push-down c reversed)
                    (cons c reversed)))))
