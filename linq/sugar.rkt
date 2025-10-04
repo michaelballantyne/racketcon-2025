@@ -1,7 +1,8 @@
 #lang racket
 
 (provide (all-defined-out)
-         (except-out (all-from-out "embedded.rkt") rt:where rt:join rt:select)
+         (except-out (all-from-out "embedded.rkt")
+                     rt:where rt:join rt:select)
          load-table)
 
 (require (rename-in "embedded.rkt"

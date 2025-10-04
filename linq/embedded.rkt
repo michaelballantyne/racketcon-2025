@@ -6,33 +6,24 @@
 (provide (all-defined-out) load-table)
 
 ;; A Table is a (Listof Row)
- 
-;; A ColName is a Symbol
 ;; A Row is a (HashOf ColName Any)
+;; A ColName is a Symbol
 
 ;; A Clause is a ((StreamOf Row) -> (StreamOf Row))
 
-(define (query/print query-result . clauses)
-  (pretty-display
-   (time
-    (apply query query-result clauses))))
 
 ;; (StreamOf Row), Clause ... -> Table
 (define (query query-result . clauses)
   (stream->list
-   (apply compose-query query-result clauses)))
+   (apply-clauses query-result clauses)))
 
-;; Compose a query that transforms the initial query-result (usually produced by `from`),
-;; applying the transformation defined by each clause in the order they are provided.
 ;; (StreamOf Row) Clause ... -> (StreamOf Row)
-(define (compose-query query-result . clauses)
+;; Execute a query by applying each clause in turn to the
+;; stream produced by the initial `from` clause.
+(define (apply-clauses query-result clauses)
   (for/fold ([qr query-result])
             ([clause clauses])
     (clause qr)))
-
-(define (compose-clauses . clauses)
-  (lambda (qr)
-    (apply compose-query qr clauses)))
 
 ;; Table -> (StreamOf Row)
 ;; Create a stream from a table of data.
@@ -45,15 +36,15 @@
   (lambda (qr)
     (for/stream ([row qr]
                  #:when (keep? row))
-        row)))
+      row)))
 
 ;; ColName ... -> Clause
 ;; Keep only the columns specified.
 (define (select . col-names)
   (lambda (qr)
-   (for/stream ([row qr])
-       (for/hash ([col col-names])
-         (values col (hash-ref row col))))))
+    (for/stream ([row qr])
+      (for/hash ([col col-names])
+        (values col (hash-ref row col))))))
 
 ;; QueryResult, (Row -> Boolean) -> Clause
 ;; An inner join of the running query-result with the argument
@@ -71,4 +62,18 @@
   (lambda (qr)
     (stream-take qr n)))
 
+
+
+
+
+
+(define (compose-clauses . clauses)
+  (lambda (qr)
+    (apply-clauses qr clauses)))
+
+;; Wrapper for `query` that prints the result and execution time.
+(define (query/print query-result . clauses)
+  (pretty-display
+   (time
+    (apply query query-result clauses))))
 

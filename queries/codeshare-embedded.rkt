@@ -10,6 +10,20 @@
 
 (query/print
  (from routes)
+ (select 'codeshare 'source-airport
+         'destination-airport 'route-airline-id)
+ (limit 5))
+
+#;
+(query/print
+ (from airlines)
+ (select 'airline-id 'name)
+ (limit 15))
+
+
+#;
+(query/print
+ (from routes)
  (join (from airlines)
        'route-airline-id 'airline-id)
  (where (lambda (row) (equal? (hash-ref row 'codeshare)
