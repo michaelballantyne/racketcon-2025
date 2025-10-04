@@ -1,46 +1,31 @@
 #lang racket
 
-(provide query load-table)
+(provide query query/print load-table)
 
 (require (for-syntax syntax/parse syntax/transformer)
          "tables.rkt"
          (prefix-in rt: "embedded.rkt")
          (prefix-in sugar: "sugar.rkt"))
 
+
+(define-syntax-rule
+  (query/print f c ...)
+  (pretty-display (time (query f c ...))))
+
 (define-syntax query
   (syntax-parser
     [(_ f c ...)
      #'(compile-from f c ...)]))
-
-(begin-for-syntax
-  (define (make-column-reference-transformer name)
-    (make-variable-like-transformer
-      (lambda (id)
-        #`(sugar:col #,name))))
-
-  (struct column-binding-rep (name)
-    #:property prop:set!-transformer
-    (lambda (rep stx)
-      ((make-column-reference-transformer (column-binding-rep-name rep))
-       stx))))
 
 (define-syntax compile-from
   (syntax-parser
     #:datum-literals (from)
     [(_ (from tbl (c ...)) cl ...)
      #'(let-syntax ([c (column-binding-rep 'c)] ...)
-         (rt:query
+         (rt:query/print
            (rt:compose-query (rt:from tbl) (rt:select 'c ...))
            (compile-clauses cl ...)))]))
 
-(define-syntax checked-ref
-  (syntax-parser
-    [(_ name:id)
-     (if (column-binding-rep? (syntax-local-value #'name (lambda () #f)))
-         (syntax-property
-            #''name 'disappeared-use
-            (list (syntax-local-introduce #'name)))
-         (raise-syntax-error #f "not a column available here" #'name))]))
 
 (define-syntax compile-clauses
   (syntax-parser
@@ -67,4 +52,30 @@
            (compile-clauses cl* ...))])]
     [(_)
      #'(lambda (q) q)]))
+
+
+
+(define-syntax checked-ref
+  (syntax-parser
+    [(_ name:id)
+     (if (column-binding-rep? (syntax-local-value #'name (lambda () #f)))
+         (syntax-property
+            #''name 'disappeared-use
+            (list (syntax-local-introduce #'name)))
+         (raise-syntax-error #f "not a column available here" #'name))]))
+
+
+;; Reference binding representation and transformer
+(begin-for-syntax
+  (define (make-column-reference-transformer name)
+    (make-variable-like-transformer
+      (lambda (id)
+        #`(sugar:col #,name))))
+
+  (struct column-binding-rep (name)
+    #:property prop:set!-transformer
+    (lambda (rep stx)
+      ((make-column-reference-transformer (column-binding-rep-name rep))
+       stx))))
+
 

@@ -11,15 +11,15 @@
 
 (module+ test (require rackunit))
 
+(define-syntax-rule
+  (query/print f c ...)
+  (pretty-display (time (query f c ...))))
 
 (syntax-spec
-  (binding-class col
-    #:description "column name"
-    #:reference-compiler col-reference-compiler)
-
   (host-interface/expression
     (query f:from-clause c:clause ...)
     #:binding (nest f c ... [])
+
     #'(compile-query (query f c ...)))
 
   (nonterminal/nesting from-clause (nested)
@@ -31,7 +31,11 @@
     (where condition:racket-expr)
     (join tbl:racket-expr (c:col ...) col1:col col2:col)
     #:binding (scope (bind c) ... col2 nested)
-    (limit n:racket-expr)))
+    (limit n:racket-expr))
+    
+  (binding-class col
+    #:description "column name"
+    #:reference-compiler col-reference-compiler))
 
 
 (define-syntax compile-query

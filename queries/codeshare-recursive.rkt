@@ -3,12 +3,12 @@
 (require "../linq/recursive.rkt")
 
 ;; Columns: airline,route-airline-id,source-airport,source-airport-id,destination-airport,destination-airport-id,codeshare,stops,equipment
-(define routes (load-table "openflights/routes.csv"))
+(define routes (load-table "../openflights/routes.csv"))
 
 ;; Columns: airline-id,name,alias,iata,icao,callsign,country,active
-(define airlines (load-table "openflights/airlines.csv"))
+(define airlines (load-table "../openflights/airlines.csv"))
 
-(query
+(query/print
  (from routes (codeshare source-airport destination-airport route-airline-id))
  (join airlines (name airline-id)
        route-airline-id airline-id)

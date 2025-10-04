@@ -1,6 +1,6 @@
 #lang racket
 
-(provide query load-table)
+(provide query query/print load-table)
 
 (require (for-syntax racket/match
                      syntax/parse
@@ -12,38 +12,23 @@
          (prefix-in rt: "embedded.rkt")
          (prefix-in sugar: "sugar.rkt"))
 
+(define-syntax-rule
+  (query/print f c ...)
+  (pretty-display (time (query f c ...))))
+
 (define-syntax query
   (syntax-parser
     [(query f c ...)
+
      (define/syntax-parse (_ f^ c^ ...) (expand-query #'(query f c ...)))
+
      (define/syntax-parse (c^^ ...) (predicate-pushdown #'(c^ ...)))
-     #;(begin
-       (pretty-display (syntax->datum #'(query f^ c^ ...)))
-       (pretty-display (syntax->datum #'(query f^ c^^ ...))))
-     #'(rt:query (compile-from f^)
+
+     #'(rt:query/print (compile-from f^)
                  (compile-clause c^^)
                  ...)]))
 
-(begin-for-syntax
-  (define current-referenced-vars (make-parameter #f))
-  (define (make-column-reference-transformer name)
-    (make-variable-like-transformer
-      (lambda (id)
-        (define refs (current-referenced-vars))
-        (if refs
-          (begin
-            (free-id-set-add! refs id)
-            #'(void))
-          #`(sugar:col #,name)))))
-
-  (struct column-binding-rep (name)
-    #:property prop:set!-transformer
-    (lambda (rep stx)
-      ((make-column-reference-transformer (column-binding-rep-name rep))
-       stx))))
-
-
-
+;; DSL expander
 (begin-for-syntax
   (define (expand-query stx)
     (syntax-parse stx
@@ -107,6 +92,25 @@
     (when (not (column-binding-rep? (syntax-local-value name (lambda () #f) ctx)))
       (raise-syntax-error #f "not a column available here" name))))
 
+;; Reference binding representation and transformer
+(begin-for-syntax
+  (define current-referenced-vars (make-parameter #f))
+  (define (make-column-reference-transformer name)
+    (make-variable-like-transformer
+      (lambda (id)
+        (define refs (current-referenced-vars))
+        (if refs
+          (begin
+            (free-id-set-add! refs id)
+            #'(void))
+          #`(sugar:col #,name)))))
+
+  (struct column-binding-rep (name)
+    #:property prop:set!-transformer
+    (lambda (rep stx)
+      ((make-column-reference-transformer (column-binding-rep-name rep))
+       stx))))
+
 
 ;; Compile a `from` syntax into an expression that evaluates to a QueryResult
 (define-syntax (compile-from stx)
@@ -132,14 +136,16 @@
     [(_ (limit n))
      #'(rt:limit n)]))
 
-
+;; Helpers for recording binding information for the IDE
 (begin-for-syntax
   (define (ref-quote id)
     (syntax-property #`'#,id 'disappeared-use (list (flip-intro-scope id))))
   (define (bind-quote id)
-    (syntax-property #`'#,id 'disappeared-binding (list (flip-intro-scope id))))
+    (syntax-property #`'#,id 'disappeared-binding (list (flip-intro-scope id)))))
 
-  
+
+;; Predicate pushdown optimization
+(begin-for-syntax
   ;; (ListOf ClauseSyntax) -> (ListOf ClauseSyntax)
   ;; Reorder the clauses to place `where` clauses before joins that introduce unrelated columns.
   (define (predicate-pushdown cs)
@@ -182,21 +188,24 @@
       [(join _ (c ...) _ _) (immutable-free-id-set (attribute c))]
       [_ (immutable-free-id-set)]))
 
-  (define (annotate-environment racket-expr ctx)
-    (syntax-property
-     #`(#%host-expression #,racket-expr)
-     'environment
-     ctx))
-  
   ;; Syntax -> (Listof Identifier)
   (define (get-where-referenced-vars cl)
     (syntax-parse cl
       [(where (~and host-expr (_ condition)))
+       (define ctx (syntax-property #'host-expr 'environment))
        (parameterize ([current-referenced-vars (mutable-free-id-set)])
-         (define ctx (syntax-property #'host-expr 'environment))
          (local-expand #'condition 'expression '() ctx)
          (free-id-set->list (current-referenced-vars)))])))
 
+
+;; Helpers for resuming expansion of host subexpressions with a context where
+;; both DSL names and names from the compilation are available.
+(begin-for-syntax
+  (define (annotate-environment racket-expr ctx)
+    (syntax-property
+     #`(#%host-expression #,racket-expr)
+     'environment
+     ctx)))
 
 (define-syntax #%host-expression
   (syntax-parser
