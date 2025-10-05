@@ -1,19 +1,20 @@
-# Advanced Macrology:  5 Macro Programming Patterns You (No Longer) Need to Know
+# Advanced Macrology: Macro Programming Patterns You (No Longer) Need to Know
 
 `syntax-spec` abstracts over certain macro programming patterns.
 
 Let’s build up to code like `syntax-spec` generates for you, to see how it works.
      *And, why you don’t want to write it by hand*
 
-Our goal: create a macro layer over a DSL that...
+Our goal: create a macro layer over a DSL that goes beyond syntactic sugar. It will:
 
- * Enforces a grammar
- * Checks name binding
- * Performs a compiler optimization
- * Could support macro extensions
+ * Enforce a grammar
+ * Check name binding
+ * Perform a compiler optimization
+ * (Prepare to) support macro extensions
 
-We'll look at four strategies: macro embedding, recursive rewriting and a DSL-specific macro expander... by hand, and with syntax-spec.
+We'll look at four strategies, ending with syntax-spec.
 
+Some knowledge of Racket macros is assumed.
 
 
 # Conclusion

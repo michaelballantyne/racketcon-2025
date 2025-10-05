@@ -12,7 +12,7 @@
 ;; An SQL or LINQ-like query, expressed as a
 ;; composition of Racket function calls and data.
 
-#;
+
 (query/print
  (from routes)
  (select 'source-airport 'destination-airport

@@ -27,6 +27,7 @@
 ;;  that follow the `from` or `join` that bind them.
 
 
+
 #;
 ;; Misuse leads to syntax errors:
 (query/print

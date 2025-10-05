@@ -22,6 +22,20 @@
  (limit 3))
 
 
+;; After expansion, it'll use the embedding:
+#;
+(rt:query/print
+ (rt:from routes)
+ (rt:join (rt:from airlines)
+          'route-airline-id 'airline-id)
+ (rt:where (lambda (row) (equal? (hash-ref row 'codeshare)
+                                 "Y")))
+ (rt:where (lambda (row) (equal? (hash-ref row 'name)
+                                 "American Airlines")))
+ (rt:select 'source-airport 'destination-airport)
+ (rt:limit 3))
+
+
 
 ;; But there is still no grammar check, checked binding, or optimization.
 

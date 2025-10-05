@@ -8,7 +8,7 @@
 ;; Columns: airline-id,name,alias,iata,icao,callsign,country,active
 (define airlines (load-table "../openflights/airlines.csv"))
 
-(query
+(query/print
  (from routes (source-airport destination-airport
                route-airline-id codeshare))
  (join airlines (name airline-id)
