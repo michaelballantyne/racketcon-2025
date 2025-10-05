@@ -8,6 +8,10 @@
 ;; Columns: airline-id,name,alias,iata,icao,callsign,country,active
 (define airlines (load-table "../openflights/airlines.csv"))
 
+
+
+;; With a little syntactic sugar, our query looks nicer:
+
 (query/print
  (from routes)
  (join (from airlines)
@@ -17,4 +21,7 @@
  (select source-airport destination-airport)
  (limit 3))
 
+
+
+;; But there is still no grammar check, checked binding, or optimization.
 

@@ -8,8 +8,12 @@
 ;; Columns: airline-id,name,alias,iata,icao,callsign,country,active
 (define airlines (load-table "../openflights/airlines.csv"))
 
+
+;; Same syntax, but this one is fast! How?
+
 (query
- (from routes (codeshare source-airport destination-airport route-airline-id))
+ (from routes (source-airport destination-airport
+               route-airline-id codeshare))
  (join airlines (name airline-id)
        route-airline-id airline-id)
  (where (equal? codeshare "Y"))
@@ -17,4 +21,7 @@
  (select source-airport destination-airport)
  (limit 3))
 
-
+;; The compiler applies predicate pushdown.
+;;
+;; To do so, it must be able to check binding first,
+;; and then transform the syntax.

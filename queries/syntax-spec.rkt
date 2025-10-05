@@ -9,7 +9,8 @@
 (define airlines (load-table "../openflights/airlines.csv"))
 
 (query
- (from routes (codeshare source-airport destination-airport route-airline-id))
+ (from routes (source-airport destination-airport
+               route-airline-id codeshare))
  (join airlines (name airline-id)
        route-airline-id airline-id)
  (where (equal? codeshare "Y"))
