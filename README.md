@@ -2,7 +2,7 @@
 
 `syntax-spec` abstracts over certain macro programming patterns.
 
-Let’s build up to code like syntax-spec generates for you, to see how it works.
+Let’s build up to code like `syntax-spec` generates for you, to see how it works.
      *And, why you don’t want to write it by hand*
 
 Our goal: create a macro layer over a DSL that...
