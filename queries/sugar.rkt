@@ -1,6 +1,6 @@
 #lang racket
 
-(require "../linq/sugar.rkt")
+(require "../linq/sugar.rkt" (prefix-in rt: "../linq/embedded.rkt"))
 
 ;; Columns: airline,route-airline-id,source-airport,source-airport-id,destination-airport,destination-airport-id,codeshare,stops,equipment
 (define routes (load-table "../openflights/routes.csv"))

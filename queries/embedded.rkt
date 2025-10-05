@@ -62,7 +62,8 @@
 
 ;; This query could be faster!
 
-#;
+#;#;
+
 (query/print
  (from routes)
  (join (from airlines)
@@ -73,8 +74,9 @@
                               "American Airlines")))
  (select 'source-airport 'destination-airport)
  (limit 3))
+
 ;; ->
-#;
+
 (query/print
  (from routes)
  ;; Moved this `where` up before the join:
